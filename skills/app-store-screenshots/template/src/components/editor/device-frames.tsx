@@ -7,10 +7,13 @@ type FrameProps = {
   src: string;
   alt?: string;
   style?: React.CSSProperties;
+  /** When true, hide EmptySlot placeholder (so it doesn't bake into exports). */
+  hideEmpty?: boolean;
 };
 
 // iPhone — uses pre-measured mockup.png overlay
-export function Phone({ src, alt = "", style }: FrameProps) {
+export function Phone({ src, alt = "", style, hideEmpty }: FrameProps) {
+  const resolved = img(src);
   return (
     <div style={{ position: "relative", aspectRatio: "1022 / 2082", ...style }}>
       <img
@@ -32,14 +35,14 @@ export function Phone({ src, alt = "", style }: FrameProps) {
           background: "#111",
         }}
       >
-        {src ? (
+        {resolved ? (
           <img
-            src={img(src)}
+            src={resolved}
             alt={alt}
             style={{ display: "block", width: "100%", height: "100%", objectFit: "cover", objectPosition: "top" }}
             draggable={false}
           />
-        ) : (
+        ) : hideEmpty ? null : (
           <EmptySlot />
         )}
       </div>
@@ -47,7 +50,8 @@ export function Phone({ src, alt = "", style }: FrameProps) {
   );
 }
 
-export function AndroidPhone({ src, alt = "", style }: FrameProps) {
+export function AndroidPhone({ src, alt = "", style, hideEmpty }: FrameProps) {
+  const resolved = img(src);
   return (
     <div style={{ position: "relative", aspectRatio: "9 / 19.5", ...style }}>
       <div
@@ -87,14 +91,14 @@ export function AndroidPhone({ src, alt = "", style }: FrameProps) {
             background: "#000",
           }}
         >
-          {src ? (
+          {resolved ? (
             <img
-              src={img(src)}
+              src={resolved}
               alt={alt}
               style={{ display: "block", width: "100%", height: "100%", objectFit: "cover", objectPosition: "top" }}
               draggable={false}
             />
-          ) : (
+          ) : hideEmpty ? null : (
             <EmptySlot />
           )}
         </div>
@@ -103,7 +107,8 @@ export function AndroidPhone({ src, alt = "", style }: FrameProps) {
   );
 }
 
-export function AndroidTabletP({ src, alt = "", style }: FrameProps) {
+export function AndroidTabletP({ src, alt = "", style, hideEmpty }: FrameProps) {
+  const resolved = img(src);
   return (
     <div style={{ position: "relative", aspectRatio: "5 / 8", ...style }}>
       <div
@@ -142,14 +147,14 @@ export function AndroidTabletP({ src, alt = "", style }: FrameProps) {
             background: "#000",
           }}
         >
-          {src ? (
+          {resolved ? (
             <img
-              src={img(src)}
+              src={resolved}
               alt={alt}
               style={{ display: "block", width: "100%", height: "100%", objectFit: "cover", objectPosition: "top" }}
               draggable={false}
             />
-          ) : (
+          ) : hideEmpty ? null : (
             <EmptySlot />
           )}
         </div>
@@ -158,7 +163,8 @@ export function AndroidTabletP({ src, alt = "", style }: FrameProps) {
   );
 }
 
-export function AndroidTabletL({ src, alt = "", style }: FrameProps) {
+export function AndroidTabletL({ src, alt = "", style, hideEmpty }: FrameProps) {
+  const resolved = img(src);
   return (
     <div style={{ position: "relative", aspectRatio: "8 / 5", ...style }}>
       <div
@@ -197,14 +203,14 @@ export function AndroidTabletL({ src, alt = "", style }: FrameProps) {
             background: "#000",
           }}
         >
-          {src ? (
+          {resolved ? (
             <img
-              src={img(src)}
+              src={resolved}
               alt={alt}
               style={{ display: "block", width: "100%", height: "100%", objectFit: "cover", objectPosition: "top" }}
               draggable={false}
             />
-          ) : (
+          ) : hideEmpty ? null : (
             <EmptySlot />
           )}
         </div>
@@ -213,7 +219,8 @@ export function AndroidTabletL({ src, alt = "", style }: FrameProps) {
   );
 }
 
-export function IPad({ src, alt = "", style }: FrameProps) {
+export function IPad({ src, alt = "", style, hideEmpty }: FrameProps) {
+  const resolved = img(src);
   return (
     <div style={{ position: "relative", aspectRatio: "770 / 1000", ...style }}>
       <div
@@ -252,14 +259,14 @@ export function IPad({ src, alt = "", style }: FrameProps) {
             background: "#000",
           }}
         >
-          {src ? (
+          {resolved ? (
             <img
-              src={img(src)}
+              src={resolved}
               alt={alt}
               style={{ display: "block", width: "100%", height: "100%", objectFit: "cover", objectPosition: "top" }}
               draggable={false}
             />
-          ) : (
+          ) : hideEmpty ? null : (
             <EmptySlot />
           )}
         </div>

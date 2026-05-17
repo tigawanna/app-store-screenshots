@@ -49,7 +49,7 @@ Ask the user these. Do not proceed until you have answers:
 2. **App icon** — "Where is your app icon PNG?"
 3. **App name** — "What's the app called?"
 4. **Feature list** — "List your app's features in priority order. What's the #1 thing your app does?"
-5. **Style direction** — "What style do you want? Examples: warm/organic, dark/moody, clean/minimal, bold/colorful. The template ships with `clean-light`, `dark-bold`, `warm-editorial`, and `ocean-fresh` presets — pick one or describe a custom palette."
+5. **Style direction** — "What style do you want? You can either (a) pick one of the named deep-spec styles, or (b) describe your own vibe in your own words (warm/organic, dark/moody, clean/minimal, bold/colorful, plus any reference apps you like) and I'll build a custom palette. The template also ships with `clean-light`, `dark-bold`, `warm-editorial`, and `ocean-fresh` palette presets you can start from. The named deep specs live in `style-prompts/` — see `style-prompts.md` for the full index. Currently available: Retro Rubberhose Mascot, Moody Curated Dating, Paper Sticker Skeuomorphic, Dreamy Pastel Couples, Hand-Drawn Editorial Tasks, Glossy 3D K-Beauty Creator. If the user names one of these — or describes something that clearly matches one — read `style-prompts/_QUALITY_BAR.md` first, then the matching deep spec file, and apply its entire spec (palette, gradients, shadows, rotations, per-slide breakdown). If the user describes a fully custom style, fall back to the General Visual Design Principles below and pick the closest deep spec as a starting reference."
 
 ### Optional
 
@@ -180,6 +180,77 @@ Vary the `layout` field across slides. The editor exposes:
 - `feature-graphic` — Play Store banner (1024×500)
 
 Never repeat the same layout twice in a row. Use 1-2 `inverted` (dark) slides for visual rhythm.
+
+## Visual Design Principles
+
+These rules are derived from studying the best app store screenshots in the wild (Superlist, Headspace, CRED, (Not Boring) Camera, Arc Search, Linktree, Gentler Streak, etc.). They apply regardless of which style preset the user picks. Style-specific tokens (fonts, palette, accents) live in `style-prompts.md` — point the user there.
+
+### 1. The background is a designed surface — never white
+
+Plain white is the amateur tell. Every great deck uses a deliberate surface: a saturated color block, a warm cream/off-white (`#F4F1EC`-ish), a dark navy/near-black, or a gradient. The background can shift per slide (Headspace, Linktree do this), but it must read as intentional, not default.
+
+### 2. Headlines dominate
+
+The headline occupies roughly the **top 30–40%** of the canvas — much bigger than a typical web hero. If a person can't read it at thumbnail size with no zoom, redesign.
+
+### 3. Mixed emphasis inside the headline
+
+Almost every great headline has one word styled differently from the rest — a contrast color, an italic script, a heavier weight, or a hand-drawn underline. Examples:
+- Superlist: "The one app that fits **your whole day**" (script + coral)
+- Headspace: "Stress **less**" (`less` orange against black)
+- Arc Search: "**Fastest** way to search. **Cleanest** way to browse." (purple / navy)
+
+Flat single-color headlines look weaker. Pick one emphasis word per slide.
+
+### 4. Decorative accents are the rule, not the exception
+
+Top decks layer at least one of these on most slides:
+- Hand-drawn squiggles, arrows, scribbles (Superlist)
+- Sparkles / glow (Gentler Streak, Arc)
+- Label badges on the visual ("SUPER RAW", "Cinematic", "LUT")
+- Floating widget chips with real stats ("$3,630 earned", "11,175 steps") — these tell the story without copy
+- Award lockups on the hero only (Apple Design Award, Webby, star count)
+
+A bare phone on a bare bg with a bare headline is the default-skill output. Add one accent.
+
+### 5. Phone framing is a deliberate choice — vary it across the deck
+
+Three common framings, each carries a different feeling:
+- **Bezelless / minimal frame** — maximizes UI legibility, modern (Arc, Linktree, Gentler)
+- **Tilted floating phone with soft shadow** — product / advertorial feel (Superlist, CRED hero)
+- **Full device with visible bezel, dead-center** — editorial, premium (CRED, NB Camera)
+
+Mix at least two framings across the deck.
+
+### 6. Proof anchors the hero, nothing else
+
+Award badges, press quotes, star counts, install counts — concentrate them on **slide 1 only**. Spreading them dilutes both the proof and the rest of the slides. NB Camera does this perfectly: Verge quote + Apple Design Award + 15,000+ stars all on the cover, none after.
+
+### 7. Density inside the phone, sparsity outside
+
+The screenshot inside the phone can (and should) be a real, dense product capture — actual lists, dashboards, charts, conversations. The space *outside* the phone is the opposite: one headline, one visual, one optional sub-line, one optional badge. Don't add bullet lists, multi-line paragraphs, or competing logos around the device.
+
+### 8. Break the phone parade
+
+Every 2–3 slides, drop the phone and use a different hero element to keep visual rhythm:
+- 3D rendered product object (NB Camera's stylized camera)
+- Photographic still (NB Camera slide 2)
+- Real human / lifestyle photo (Linktree)
+- Mascot illustration (Headspace's mascot, Gentler Streak's character)
+- Typographic feature wall (Superlist's last slide)
+- Phone grid mosaic (Linktree's "Trusted by 70M+" final slide)
+
+### 9. Last slide pattern
+
+The closer is almost always one of two things:
+- **Feature wall** — a vertical list of one-word features styled as big type ("Real-time collaboration / Offline support / Widgets / Integrations…")
+- **Phone mosaic** — multiple bezelless mini-screenshots arranged in a grid to convey "look at all the things this does"
+
+Pick one. Don't make the last slide another single-feature hero — it wastes the spot.
+
+### 10. Thumbnail test (mandatory before export)
+
+Shrink the slide to ~160px wide (App Store search-result size). Squint. Can you read the headline? Can you tell what the app does in under a second? If not, the headline is too long, the type is too thin, or there's no contrast between text and background. Fix before exporting.
 
 ## Step 4: Localization
 

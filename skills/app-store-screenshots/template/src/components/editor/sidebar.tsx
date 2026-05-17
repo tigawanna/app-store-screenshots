@@ -2,34 +2,24 @@
 import * as React from "react";
 import {
   DndContext,
+  KeyboardSensor,
   PointerSensor,
   closestCenter,
   useSensor,
   useSensors,
   type DragEndEvent,
 } from "@dnd-kit/core";
-import { SortableContext, arrayMove, verticalListSortingStrategy } from "@dnd-kit/sortable";
+import {
+  SortableContext,
+  arrayMove,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import type { Device, Orientation, Slide, SlideLayout, Theme } from "@/lib/types";
+import type { Device, Orientation, Slide, Theme } from "@/lib/types";
 import { newSlide } from "@/lib/defaults";
 import { SlideThumb } from "./slide-thumb";
-
-const ADD_LAYOUTS: SlideLayout[] = [
-  "hero",
-  "device-bottom",
-  "device-top",
-  "two-devices",
-  "no-device",
-  "split-landscape",
-];
 
 type Props = {
   slides: Slide[];
@@ -39,9 +29,11 @@ type Props = {
   theme: Theme;
   appName?: string;
   appIcon?: string;
+  disabled?: boolean;
   onReorder: (next: Slide[]) => void;
   onSelect: (id: string) => void;
   onDelete: (id: string) => void;
+  onDuplicate: (id: string) => void;
   onAdd: (slide: Slide) => void;
 };
 
@@ -53,12 +45,17 @@ export function Sidebar({
   theme,
   appName,
   appIcon,
+  disabled,
   onReorder,
   onSelect,
   onDelete,
+  onDuplicate,
   onAdd,
 }: Props) {
-  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }));
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  );
 
   const handleDragEnd = (e: DragEndEvent) => {
     const { active, over } = e;
@@ -69,13 +66,13 @@ export function Sidebar({
     onReorder(arrayMove(slides, oldIdx, newIdx));
   };
 
-  const [addLayout, setAddLayout] = React.useState<SlideLayout>("device-bottom");
-
   return (
     <div className="flex h-full flex-col">
       <div className="border-b p-3">
         <h2 className="text-sm font-semibold">Slides</h2>
-        <p className="text-xs text-muted-foreground">{slides.length} slide{slides.length === 1 ? "" : "s"}</p>
+        <p className="text-xs text-muted-foreground">
+          {slides.length} slide{slides.length === 1 ? "" : "s"} · drag to reorder
+        </p>
       </div>
 
       <div className="flex-1 overflow-y-auto p-2">
@@ -95,36 +92,29 @@ export function Sidebar({
                   appIcon={appIcon}
                   onSelect={() => onSelect(slide.id)}
                   onDelete={() => onDelete(slide.id)}
+                  onDuplicate={() => onDuplicate(slide.id)}
                 />
               ))}
               {slides.length === 0 && (
-                <p className="px-2 py-6 text-center text-xs text-muted-foreground">
-                  No slides yet — add one below.
-                </p>
+                <div className="rounded-lg border border-dashed p-6 text-center">
+                  <p className="text-xs font-medium text-foreground">No slides yet</p>
+                  <p className="mt-1 text-[11px] text-muted-foreground">
+                    Click <span className="font-semibold">Add slide</span> to get started.
+                  </p>
+                </div>
               )}
             </div>
           </SortableContext>
         </DndContext>
       </div>
 
-      <div className="space-y-2 border-t p-3">
-        <Select value={addLayout} onValueChange={(v) => setAddLayout(v as SlideLayout)}>
-          <SelectTrigger className="w-full">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {ADD_LAYOUTS.map((l) => (
-              <SelectItem key={l} value={l}>
-                {l}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+      <div className="border-t bg-card p-3">
         <Button
           type="button"
           className="w-full"
           variant="default"
-          onClick={() => onAdd(newSlide(addLayout))}
+          onClick={() => onAdd(newSlide("device-bottom"))}
+          disabled={disabled}
         >
           <Plus className="h-4 w-4" /> Add slide
         </Button>

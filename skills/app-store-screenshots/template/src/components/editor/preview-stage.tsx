@@ -1,8 +1,15 @@
 "use client";
 import * as React from "react";
-import type { Device, Orientation, Slide, Theme } from "@/lib/types";
-import { getCanvas } from "./slide-canvas";
-import { SlideCanvas } from "./slide-canvas";
+import { DEVICE_LABEL, LAYOUT_LABEL } from "@/lib/constants";
+import type {
+  Device,
+  ElementId,
+  ElementTransform,
+  Orientation,
+  Slide,
+  Theme,
+} from "@/lib/types";
+import { getCanvas, SlideCanvas } from "./slide-canvas";
 
 type Props = {
   slide: Slide;
@@ -11,8 +18,11 @@ type Props = {
   theme: Theme;
   appName?: string;
   appIcon?: string;
+  selectedElementId: ElementId | null;
   onLabelChange: (v: string) => void;
   onHeadlineChange: (v: string) => void;
+  onElementChange: (id: ElementId, t: ElementTransform) => void;
+  onSelectElement: (id: ElementId | null) => void;
 };
 
 // Fits the full-resolution canvas inside its container by measuring the
@@ -24,8 +34,11 @@ export function PreviewStage({
   theme,
   appName,
   appIcon,
+  selectedElementId,
   onLabelChange,
   onHeadlineChange,
+  onElementChange,
+  onSelectElement,
 }: Props) {
   const containerRef = React.useRef<HTMLDivElement>(null);
   const [scale, setScale] = React.useState(0.2);
@@ -36,9 +49,8 @@ export function PreviewStage({
     if (!el) return;
     const update = () => {
       const rect = el.getBoundingClientRect();
-      // Leave a little padding
-      const sx = (rect.width - 24) / cW;
-      const sy = (rect.height - 24) / cH;
+      const sx = (rect.width - 48) / cW;
+      const sy = (rect.height - 48) / cH;
       setScale(Math.max(0.05, Math.min(sx, sy)));
     };
     update();
@@ -50,7 +62,7 @@ export function PreviewStage({
   return (
     <div
       ref={containerRef}
-      className="relative flex h-full w-full items-center justify-center overflow-hidden bg-muted/40"
+      className="relative flex h-full w-full items-center justify-center overflow-hidden bg-[radial-gradient(60%_60%_at_50%_40%,_hsl(var(--background))_0%,_hsl(var(--muted))_100%)]"
     >
       <div
         style={{
@@ -59,8 +71,10 @@ export function PreviewStage({
           transform: `scale(${scale})`,
           transformOrigin: "center center",
           flexShrink: 0,
-          boxShadow: "0 25px 50px -12px rgba(0,0,0,0.25)",
+          boxShadow: "0 40px 80px -30px rgba(0,0,0,0.32), 0 10px 24px -12px rgba(0,0,0,0.18)",
           background: "white",
+          borderRadius: 12 / scale,
+          overflow: "hidden",
         }}
       >
         <SlideCanvas
@@ -71,11 +85,28 @@ export function PreviewStage({
           appName={appName}
           appIcon={appIcon}
           editable
-          edit={{ onLabelChange, onHeadlineChange }}
+          previewScale={scale}
+          selectedElementId={selectedElementId}
+          edit={{ onLabelChange, onHeadlineChange, onElementChange, onSelectElement }}
         />
       </div>
-      <div className="pointer-events-none absolute bottom-2 right-3 text-[10px] text-muted-foreground">
-        {cW}×{cH} · {(scale * 100).toFixed(0)}%
+
+      <div className="pointer-events-none absolute left-4 top-4 flex items-center gap-1.5 text-[11px] text-muted-foreground">
+        <span className="font-medium text-foreground">{DEVICE_LABEL[device]}</span>
+        <span aria-hidden>·</span>
+        <span>{LAYOUT_LABEL[slide.layout]}</span>
+        {orientation === "landscape" && (
+          <>
+            <span aria-hidden>·</span>
+            <span>landscape</span>
+          </>
+        )}
+      </div>
+
+      <div className="pointer-events-none absolute bottom-4 right-4 flex items-center gap-1.5 text-[10px] tabular-nums text-muted-foreground">
+        <span>{cW}×{cH}</span>
+        <span aria-hidden>·</span>
+        <span>{(scale * 100).toFixed(0)}%</span>
       </div>
     </div>
   );

@@ -1,7 +1,14 @@
 "use client";
 import * as React from "react";
-import { Check, Cloud, Download, RotateCcw } from "lucide-react";
+import { AlertTriangle, Check, Cloud, Download, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -13,10 +20,9 @@ import {
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   DEVICE_LABEL,
-  EXPORT_SIZES,
-  EXPORT_SIZES_LANDSCAPE,
+  getExportSizes,
   LOCALES,
-  THEMES,
+  supportsLandscape,
 } from "@/lib/constants";
 import { detectPlatform } from "@/lib/defaults";
 import type { Device, Orientation, ThemeId } from "@/lib/types";
@@ -35,63 +41,99 @@ type Props = {
   sizeIdx: number;
   setSizeIdx: (i: number) => void;
   onExport: () => void;
-  onReset: () => void;
+  onResetAll: () => void;
+  onResetDevice: () => void;
   exporting: string | null;
   savedAt: number | null;
+  saveError: string | null;
+  busy: boolean;
 };
 
 export function Toolbar(props: Props) {
   const platform = detectPlatform(props.device);
-  const isTablet = props.device === "android-7" || props.device === "android-10";
-  const sizes =
-    isTablet && props.orientation === "landscape"
-      ? EXPORT_SIZES_LANDSCAPE[props.device] || EXPORT_SIZES[props.device]
-      : EXPORT_SIZES[props.device];
+  const hasLandscape = supportsLandscape(props.device);
+  const [resetOpen, setResetOpen] = React.useState(false);
+  const sizes = getExportSizes(props.device, props.orientation);
+
+  // Track last device per platform so iOS/Android tabs preserve user's choice.
+  const lastByPlatform = React.useRef<{ ios: Device; android: Device }>({
+    ios: platform === "ios" ? props.device : "iphone",
+    android: platform === "android" ? props.device : "android",
+  });
+  React.useEffect(() => {
+    lastByPlatform.current[platform] = props.device;
+  }, [platform, props.device]);
+
+  // Clamp sizeIdx so the controlled Select never falls out of range when the
+  // sizes array changes (e.g. switching device).
+  const safeSizeIdx = Math.min(props.sizeIdx, Math.max(0, sizes.length - 1));
+  const showLocale = LOCALES.length > 1;
+
+  const deviceLabel = DEVICE_LABEL[props.device];
 
   return (
-    <div className="flex items-center gap-3 border-b bg-background px-4 py-2">
-      <div className="flex shrink-0 items-center gap-2">
-        <Input
-          value={props.appName}
-          onChange={(e) => props.setAppName(e.target.value)}
-          className="h-8 w-44 text-sm font-semibold"
-          placeholder="App name"
-        />
-      </div>
+    <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5 border-b bg-card/40 px-4 py-2">
+      <Input
+        value={props.appName}
+        onChange={(e) => props.setAppName(e.target.value)}
+        className="h-8 w-40 border-dashed text-sm font-semibold focus-visible:border-input focus-visible:border-solid focus-visible:bg-background"
+        placeholder="App name"
+        aria-label="App name"
+        title="App name (click to edit)"
+        disabled={props.busy}
+      />
+
+      <span aria-hidden className="mx-1 h-5 w-px bg-border" />
 
       <Tabs
         value={platform}
-        onValueChange={(p) => props.setDevice(p === "ios" ? "iphone" : "android")}
+        onValueChange={(p) => {
+          if (props.busy) return;
+          const next = p === "ios" ? lastByPlatform.current.ios : lastByPlatform.current.android;
+          props.setDevice(next);
+        }}
       >
-        <TabsList>
-          <TabsTrigger value="ios"></TabsTrigger>
-          <TabsTrigger value="android">Android</TabsTrigger>
+        <TabsList className="h-8 p-0.5">
+          <TabsTrigger value="ios" className="h-7 px-3 text-xs" disabled={props.busy}>
+            iOS
+          </TabsTrigger>
+          <TabsTrigger value="android" className="h-7 px-3 text-xs" disabled={props.busy}>
+            Android
+          </TabsTrigger>
         </TabsList>
       </Tabs>
 
-      <Select value={props.device} onValueChange={(v) => props.setDevice(v as Device)}>
-        <SelectTrigger className="h-8 w-40 text-xs">
-          <SelectValue />
+      <Select
+        value={props.device}
+        onValueChange={(v) => props.setDevice(v as Device)}
+        disabled={props.busy}
+      >
+        <SelectTrigger className="h-8 w-44 text-xs">
+          <SelectValue placeholder="Device">{deviceLabel}</SelectValue>
         </SelectTrigger>
         <SelectContent>
           {platform === "ios" ? (
             <>
-              <SelectItem value="iphone">iPhone</SelectItem>
-              <SelectItem value="ipad">iPad</SelectItem>
+              <SelectItem value="iphone">{DEVICE_LABEL.iphone}</SelectItem>
+              <SelectItem value="ipad">{DEVICE_LABEL.ipad}</SelectItem>
             </>
           ) : (
             <>
-              <SelectItem value="android">Android Phone</SelectItem>
-              <SelectItem value="android-7">Android 7" Tablet</SelectItem>
-              <SelectItem value="android-10">Android 10" Tablet</SelectItem>
-              <SelectItem value="feature-graphic">Feature Graphic</SelectItem>
+              <SelectItem value="android">{DEVICE_LABEL.android}</SelectItem>
+              <SelectItem value="android-7">{DEVICE_LABEL["android-7"]}</SelectItem>
+              <SelectItem value="android-10">{DEVICE_LABEL["android-10"]}</SelectItem>
+              <SelectItem value="feature-graphic">{DEVICE_LABEL["feature-graphic"]}</SelectItem>
             </>
           )}
         </SelectContent>
       </Select>
 
-      {isTablet && (
-        <Select value={props.orientation} onValueChange={(v) => props.setOrientation(v as Orientation)}>
+      {hasLandscape && (
+        <Select
+          value={props.orientation}
+          onValueChange={(v) => props.setOrientation(v as Orientation)}
+          disabled={props.busy}
+        >
           <SelectTrigger className="h-8 w-32 text-xs">
             <SelectValue />
           </SelectTrigger>
@@ -102,37 +144,27 @@ export function Toolbar(props: Props) {
         </Select>
       )}
 
-      <Select value={props.themeId} onValueChange={(v) => props.setThemeId(v as ThemeId)}>
-        <SelectTrigger className="h-8 w-36 text-xs">
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent>
-          {Object.values(THEMES).map((t) => (
-            <SelectItem key={t.id} value={t.id}>
-              {t.name}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-
-      <Select value={props.locale} onValueChange={props.setLocale}>
-        <SelectTrigger className="h-8 w-20 text-xs">
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent>
-          {LOCALES.map((l) => (
-            <SelectItem key={l} value={l}>
-              {l.toUpperCase()}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+      {showLocale && (
+        <Select value={props.locale} onValueChange={props.setLocale} disabled={props.busy}>
+          <SelectTrigger className="h-8 w-20 text-xs">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {LOCALES.map((l) => (
+              <SelectItem key={l} value={l}>
+                {l.toUpperCase()}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      )}
 
       <Select
-        value={String(props.sizeIdx)}
+        value={String(safeSizeIdx)}
         onValueChange={(v) => props.setSizeIdx(Number(v))}
+        disabled={props.busy}
       >
-        <SelectTrigger className="h-8 w-44 text-xs">
+        <SelectTrigger className="h-8 w-56 text-xs">
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
@@ -145,25 +177,81 @@ export function Toolbar(props: Props) {
       </Select>
 
       <div className="ml-auto flex shrink-0 items-center gap-2">
-        <SaveStatus savedAt={props.savedAt} />
-        <Button variant="ghost" size="sm" onClick={props.onReset} title="Reset to defaults">
+        <SaveStatus savedAt={props.savedAt} saveError={props.saveError} />
+        <span aria-hidden className="h-5 w-px bg-border" />
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-8 w-8"
+          onClick={() => setResetOpen(true)}
+          title="Reset slides to defaults"
+          aria-label="Reset"
+          disabled={props.busy}
+        >
           <RotateCcw className="h-4 w-4" />
         </Button>
-        <Button onClick={props.onExport} disabled={!!props.exporting} size="sm">
+        <Button onClick={props.onExport} disabled={!!props.exporting} size="sm" className="h-8">
           <Download className="h-4 w-4" />
           {props.exporting ? `Exporting ${props.exporting}` : "Export all"}
         </Button>
       </div>
+
+      <Dialog open={resetOpen} onOpenChange={setResetOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Reset to defaults?</DialogTitle>
+            <DialogDescription>
+              Choose whether to reset just <span className="font-medium">{deviceLabel}</span> or every device deck. Your edits, uploaded screenshots, and copy will be lost.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex flex-wrap justify-end gap-2">
+            <Button variant="ghost" size="sm" onClick={() => setResetOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                setResetOpen(false);
+                props.onResetDevice();
+              }}
+            >
+              Reset {deviceLabel} only
+            </Button>
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={() => {
+                setResetOpen(false);
+                props.onResetAll();
+              }}
+            >
+              Reset all devices
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
 
-function SaveStatus({ savedAt }: { savedAt: number | null }) {
+function SaveStatus({ savedAt, saveError }: { savedAt: number | null; saveError: string | null }) {
   const [, setTick] = React.useState(0);
   React.useEffect(() => {
-    const t = setInterval(() => setTick((x) => x + 1), 30_000);
+    const t = setInterval(() => setTick((x) => x + 1), 60_000);
     return () => clearInterval(t);
   }, []);
+
+  if (saveError) {
+    return (
+      <span
+        className="flex items-center gap-1 text-xs text-destructive"
+        title={saveError}
+      >
+        <AlertTriangle className="h-3.5 w-3.5" /> save failed
+      </span>
+    );
+  }
 
   if (!savedAt) {
     return (
@@ -174,7 +262,13 @@ function SaveStatus({ savedAt }: { savedAt: number | null }) {
   }
   const seconds = Math.max(0, Math.round((Date.now() - savedAt) / 1000));
   const label =
-    seconds < 5 ? "saved" : seconds < 60 ? `saved ${seconds}s ago` : `saved ${Math.round(seconds / 60)}m ago`;
+    seconds < 5
+      ? "saved"
+      : seconds < 60
+        ? `saved ${seconds}s ago`
+        : seconds < 3600
+          ? `saved ${Math.round(seconds / 60)}m ago`
+          : `saved ${Math.round(seconds / 3600)}h ago`;
   return (
     <span className="flex items-center gap-1 text-xs text-muted-foreground">
       <Check className="h-3.5 w-3.5 text-green-500" /> {label}

@@ -20,6 +20,18 @@ export type SlideLayout =
   | "split-landscape"  // landscape tablets only: caption left + device right
   | "feature-graphic"; // 1024×500 banner with icon + name + tagline
 
+// Per-element rect in canvas pixel space. Optional rotation in degrees and zIndex.
+export type ElementTransform = {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  rotation?: number;
+  zIndex?: number;
+};
+
+export type ElementId = "caption" | "device" | "deviceSecondary";
+
 export type Slide = {
   id: string;
   layout: SlideLayout;
@@ -28,6 +40,8 @@ export type Slide = {
   screenshot: string;  // path under /screenshots/ (or "" for none)
   screenshotSecondary?: string; // for two-devices layout
   inverted?: boolean;  // dark background variant
+  // Per-element overrides; when present, replaces layout default placement.
+  transforms?: Partial<Record<ElementId, ElementTransform>>;
 };
 
 export type ThemeId = "clean-light" | "dark-bold" | "warm-editorial" | "ocean-fresh";
@@ -45,7 +59,6 @@ export type Theme = {
 
 export type ProjectState = {
   appName: string;
-  tagline: string;
   themeId: ThemeId;
   locale: string;
   device: Device;

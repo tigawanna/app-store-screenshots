@@ -1,4 +1,4 @@
-import type { Device, Theme, ThemeId } from "./types";
+import type { Device, Orientation, SlideLayout, Theme, ThemeId } from "./types";
 
 // ---------- Canvas dimensions (design at largest required resolution) ----------
 export const CANVAS: Record<Device, { w: number; h: number; wL?: number; hL?: number }> = {
@@ -36,6 +36,17 @@ export const EXPORT_SIZES_LANDSCAPE: Partial<Record<Device, ExportSize[]>> = {
   "android-10": [{ label: '10" Landscape', w: 2560, h: 1600 }],
 };
 
+export function supportsLandscape(device: Device): boolean {
+  return device in EXPORT_SIZES_LANDSCAPE;
+}
+
+export function getExportSizes(device: Device, orientation: Orientation): ExportSize[] {
+  if (orientation === "landscape") {
+    return EXPORT_SIZES_LANDSCAPE[device] || EXPORT_SIZES[device];
+  }
+  return EXPORT_SIZES[device];
+}
+
 // ---------- Frame aspect ratios ----------
 export const MK_RATIO    = 1022 / 2082; // iPhone PNG mockup
 export const TAB_P_RATIO = 0.667;        // tablet portrait
@@ -53,8 +64,6 @@ export const PHONE_SCREEN = {
 };
 
 // ---------- Width formula helpers ----------
-export type WidthFn = (cW: number, cH: number) => number;
-
 export function phoneW(cW: number, cH: number, clamp = 0.84) {
   return Math.min(clamp, 0.72 * (cH / cW) * MK_RATIO);
 }
@@ -129,4 +138,24 @@ export const DEVICE_LABEL: Record<Device, string> = {
   "feature-graphic": "Feature Graphic",
 };
 
-export const RTL_LOCALES = new Set(["ar", "he", "fa", "ur"]);
+// Friendly labels for slide layouts (used in dropdowns)
+export const LAYOUT_LABEL: Record<SlideLayout, string> = {
+  hero: "Hero",
+  "device-bottom": "Device bottom",
+  "device-top": "Device top",
+  "two-devices": "Two devices",
+  "no-device": "No device",
+  "split-landscape": "Split (landscape)",
+  "feature-graphic": "Feature graphic",
+};
+
+// Short description shown under each layout name
+export const LAYOUT_HINT: Record<SlideLayout, string> = {
+  hero: "Headline above, device at bottom",
+  "device-bottom": "Headline top, device anchored below",
+  "device-top": "Flipped — device on top",
+  "two-devices": "Layered back + front phones",
+  "no-device": "Big standalone headline",
+  "split-landscape": "Caption left, device right",
+  "feature-graphic": "1024×500 Play Store banner",
+};

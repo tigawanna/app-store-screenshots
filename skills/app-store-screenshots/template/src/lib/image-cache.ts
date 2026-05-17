@@ -3,6 +3,7 @@
 // non-deterministic image fetch races. Always use img(path) in render.
 
 const cache = new Map<string, string>();
+const failed = new Set<string>();
 
 async function fetchAsDataUrl(path: string): Promise<string | null> {
   try {
@@ -24,23 +25,29 @@ export async function preloadImages(paths: string[]): Promise<void> {
   await Promise.all(
     paths
       .filter(Boolean)
-      .filter((p) => !cache.has(p))
+      .filter((p) => !cache.has(p) && !failed.has(p))
       .map(async (p) => {
         const data = await fetchAsDataUrl(p);
         if (data) cache.set(p, data);
+        else failed.add(p);
       }),
   );
 }
 
 export function img(path: string | undefined): string {
   if (!path) return "";
+  if (path.startsWith("data:")) return path;
+  if (failed.has(path)) return "";
   return cache.get(path) || path;
 }
 
 export function setImage(path: string, dataUrl: string) {
   cache.set(path, dataUrl);
+  failed.delete(path);
 }
 
-export function hasImage(path: string): boolean {
-  return cache.has(path);
+export function didFail(path: string | undefined): boolean {
+  if (!path) return false;
+  if (path.startsWith("data:")) return false;
+  return failed.has(path);
 }

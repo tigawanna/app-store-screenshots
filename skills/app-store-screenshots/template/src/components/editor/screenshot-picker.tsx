@@ -1,14 +1,16 @@
 "use client";
 import * as React from "react";
-import { Image as ImageIcon, X } from "lucide-react";
+import { Image as ImageIcon, Upload, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { setImage } from "@/lib/image-cache";
+import { didFail, img, setImage } from "@/lib/image-cache";
 
 type Props = {
   label: string;
   value: string;
   onChange: (v: string) => void;
 };
+
+const ACCEPTED = ["image/png", "image/jpeg"];
 
 async function fileToDataUrl(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -22,65 +24,121 @@ async function fileToDataUrl(file: File): Promise<string> {
 export function ScreenshotPicker({ label, value, onChange }: Props) {
   const inputRef = React.useRef<HTMLInputElement>(null);
   const [dragging, setDragging] = React.useState(false);
+  const [error, setError] = React.useState<string | null>(null);
 
   async function handleFile(file: File) {
-    const dataUrl = await fileToDataUrl(file);
-    setImage(dataUrl, dataUrl);
-    onChange(dataUrl);
+    setError(null);
+    if (!ACCEPTED.includes(file.type)) {
+      setError("Use PNG or JPG (App Store rejects other formats)");
+      return;
+    }
+    if (file.size > 8 * 1024 * 1024) {
+      setError("Image too large (>8MB)");
+      return;
+    }
+    try {
+      const dataUrl = await fileToDataUrl(file);
+      setImage(dataUrl, dataUrl);
+      onChange(dataUrl);
+    } catch {
+      setError("Failed to read file");
+    }
   }
 
+  const hasValue = !!value;
+  const isData = hasValue && value.startsWith("data:");
+  const previewSrc = isData ? value : hasValue ? img(value) : "";
+  // Only flag "image not found" when the path is a real URL that we tried and failed.
+  const knownMissing = hasValue && !isData && didFail(value);
+  const valueLabel = !hasValue
+    ? "drop image, or click Pick"
+    : isData
+      ? "uploaded image"
+      : value.replace(/^.*\/(?=[^/]+\/[^/]+$)/, "…/");
+
   return (
-    <div
-      className={`flex items-center gap-2 rounded-md border ${dragging ? "border-primary bg-accent" : "border-input"} p-2 transition-colors`}
-      onDragOver={(e) => {
-        e.preventDefault();
-        setDragging(true);
-      }}
-      onDragLeave={() => setDragging(false)}
-      onDrop={async (e) => {
-        e.preventDefault();
-        setDragging(false);
-        const file = e.dataTransfer.files?.[0];
-        if (file && file.type.startsWith("image/")) await handleFile(file);
-      }}
-    >
-      <ImageIcon className="h-4 w-4 shrink-0 text-muted-foreground" />
-      <div className="flex min-w-0 flex-1 flex-col">
-        <span className="text-xs font-medium">{label}</span>
-        <span className="truncate text-[10px] text-muted-foreground">
-          {value
-            ? value.startsWith("data:")
-              ? "uploaded image"
-              : value
-            : "drop or click to upload"}
-        </span>
-      </div>
-      <input
-        ref={inputRef}
-        type="file"
-        accept="image/*"
-        className="hidden"
-        onChange={async (e) => {
-          const file = e.target.files?.[0];
-          if (file) await handleFile(file);
-          e.currentTarget.value = "";
+    <div className="space-y-1">
+      <div
+        className={`flex items-center gap-3 rounded-md border p-2 transition-colors ${
+          dragging ? "border-primary bg-accent ring-2 ring-primary/30" : "border-input"
+        }`}
+        onDragOver={(e) => {
+          e.preventDefault();
+          if (!dragging) setDragging(true);
         }}
-      />
-      <Button type="button" variant="outline" size="sm" onClick={() => inputRef.current?.click()}>
-        Pick
-      </Button>
-      {value && (
+        onDragLeave={(e) => {
+          if (e.currentTarget === e.target) setDragging(false);
+        }}
+        onDrop={async (e) => {
+          e.preventDefault();
+          setDragging(false);
+          const file = e.dataTransfer.files?.[0];
+          if (file) await handleFile(file);
+        }}
+      >
+        <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-md border bg-muted">
+          {previewSrc ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={previewSrc}
+              alt=""
+              className="h-full w-full object-cover"
+              draggable={false}
+              onError={() => setError("Image failed to load")}
+            />
+          ) : (
+            <ImageIcon className="h-4 w-4 text-muted-foreground" />
+          )}
+        </div>
+        <div className="flex min-w-0 flex-1 flex-col">
+          <span className="truncate text-xs font-medium">{label}</span>
+          <span className="truncate text-[10px] text-muted-foreground">
+            {dragging ? "Drop to upload" : valueLabel}
+          </span>
+        </div>
+        <input
+          ref={inputRef}
+          type="file"
+          accept="image/png,image/jpeg"
+          className="hidden"
+          onChange={async (e) => {
+            const file = e.target.files?.[0];
+            if (file) await handleFile(file);
+            e.currentTarget.value = "";
+          }}
+        />
         <Button
           type="button"
-          variant="ghost"
-          size="icon"
-          className="h-7 w-7"
-          onClick={() => onChange("")}
-          aria-label="Clear screenshot"
+          variant="outline"
+          size="sm"
+          className="h-8"
+          onClick={() => inputRef.current?.click()}
         >
-          <X className="h-4 w-4" />
+          <Upload className="h-3.5 w-3.5" />
+          Pick
         </Button>
-      )}
+        {hasValue && (
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8"
+            onClick={() => {
+              onChange("");
+              setError(null);
+            }}
+            aria-label="Clear screenshot"
+            title="Clear"
+          >
+            <X className="h-4 w-4" />
+          </Button>
+        )}
+      </div>
+      {error ? (
+        <p className="text-[11px] text-destructive">{error}</p>
+      ) : knownMissing ? (
+        <p className="text-[11px] text-destructive">Image not found at {value}</p>
+      ) : null}
     </div>
   );
 }
